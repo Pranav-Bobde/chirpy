@@ -1,8 +1,66 @@
+/* eslint-disable @next/next/no-img-element */
 import { type NextPage } from "next";
 import Head from "next/head";
 
 import { api } from "@/utils/api";
-import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
+import type { RouterOutputs } from "@/utils/api";
+
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { SignInButton, useUser } from "@clerk/nextjs";
+import Image from "next/image";
+
+dayjs.extend(relativeTime);
+
+const CreatePostWizard = () => {
+  const { user } = useUser();
+
+  console.log("user: ", user);
+
+  if (!user) return null;
+
+  return (
+    <div className="flex w-full gap-3">
+      <Image
+        className="h-14 w-14 rounded-full"
+        src={user.profileImageUrl}
+        alt="Profile Image"
+      />
+      <input
+        className="grow bg-transparent outline-none"
+        type="text"
+        placeholder="Type some emojis!"
+      />
+    </div>
+  );
+};
+
+type PostWithUser = RouterOutputs["posts"]["getAll"][number];
+const PostView = (props: PostWithUser) => {
+  const { post, author } = props;
+  return (
+    <div key={post.id} className="flex gap-3 border-b border-slate-100 p-4">
+      <Image
+        className="h-14 w-14 rounded-full"
+        src={author.profileImageUrl}
+        alt={`${author.username}'s profile image}`}
+        width={56}
+        height={56}
+      />
+      <div className="flex flex-col">
+        <div className="flex flex-col">
+          <div>
+            <span>{`@${author.username}`}</span>
+            <span className="font-thin">{` . ${dayjs(
+              post.createdAt
+            ).fromNow()}`}</span>
+          </div>
+        </div>
+        <span>{post.content}</span>
+      </div>
+    </div>
+  );
+};
 
 const Home: NextPage = () => {
   const user = useUser();
@@ -31,13 +89,11 @@ const Home: NextPage = () => {
                 <SignInButton />
               </div>
             )}
-            {!!user.isSignedIn && <SignOutButton />}
+            {!!user.isSignedIn && CreatePostWizard()}
           </div>
           <div className="flex flex-col">
-            {[...data, ...data]?.map((post) => (
-              <div key={post.id} className="border-b border-slate-100 p-8">
-                <h1>{post.content}</h1>
-              </div>
+            {[...data, ...data]?.map((allPosts) => (
+              <PostView key={allPosts.post.id} {...allPosts} />
             ))}
           </div>
         </div>
